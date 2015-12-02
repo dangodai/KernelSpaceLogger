@@ -4,9 +4,11 @@
 #include <linux/keyboard.h>
 #include <linux/notifier.h>
 
+#define KEY_PRESSED 1
+#define KEY_NOT_PRESSED 0
+
 MODULE_AUTHOR("Reilly Moore, Brandon Cryderman");
 MODULE_LICENSE("GPL");
-
 
 /*
 	keyboard_notifier_callback
@@ -16,11 +18,17 @@ MODULE_LICENSE("GPL");
 int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, void *data){
 	struct keyboard_notifier_param *kb = data;
 
-	printk(KERN_DEBUG "Activity: %lu", action);
-	printk(KERN_DEBUG "kb->down: %d", kb->down);
-	printk(KERN_DEBUG "kb->shift: %d", kb->shift);
-	printk(KERN_DEBUG "kb->ledstate: %d", kb->ledstate);
-	printk(KERN_DEBUG "kb->value: %d", kb->value);
+	/*
+		http://lxr.free-electrons.com/source/include/linux/notifier.h#L206
+		for action == KBD_KEYCODE
+	*/
+	if(action == KBD_KEYCODE && kb->down == KEY_PRESSED){
+		printk(KERN_DEBUG "{\n");
+		printk(KERN_DEBUG "		kb->down: %d\n", kb->down);
+		printk(KERN_DEBUG "		kb->shift: %d\n", kb->shift);
+		printk(KERN_DEBUG "		kb->ledstate: %d\n", kb->ledstate);
+		printk(KERN_DEBUG "		kb->value: %d\n}\n", kb->value);
+	}
 
 	return 0;
 } 
