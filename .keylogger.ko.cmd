@@ -1,1 +1,0 @@
-cmd_/home/student/modules/github.com/dangodai/keylogger/keylogger.ko := ld -r -m elf_i386 -T /usr/src/linux-headers-3.13.0-62-generic/scripts/module-common.lds --build-id  -o /home/student/modules/github.com/dangodai/keylogger/keylogger.ko /home/student/modules/github.com/dangodai/keylogger/keylogger.o /home/student/modules/github.com/dangodai/keylogger/keylogger.mod.o
