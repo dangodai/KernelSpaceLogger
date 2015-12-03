@@ -1,0 +1,7 @@
+logfile = open("/var/log/syslog")
+
+string = logfile.read().split("Keylogger started!")[-1]
+strings = string.
+ 
+print strings
+

