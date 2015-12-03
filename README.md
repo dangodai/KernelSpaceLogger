@@ -1,17 +1,17 @@
 # KernelSpaceLogger
 
-*Usage*
+#Usage
 
 Modify the settings in settings.h
 
-_Kernel Module_
-'''
+##Kernel Module_
+'''bash
 $ make
-# insmod keylogger.ko
+## insmod keylogger.ko
 '''
 
 _Recieving Client_
 Just run
-'''
+'''bash
 $ python listener.py
 '''
